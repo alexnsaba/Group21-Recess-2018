@@ -21,7 +21,7 @@ ui = fluidPage(
                 tabPanel("SUMMARY",
                sidebarLayout(
                  sidebarPanel(
-                   
+                   # player
                    selectInput(
                      "Choice4",
                      "SELECT VARIABLE TO SUMMARIZE IN PLAYER DATASET",
@@ -33,14 +33,23 @@ ui = fluidPage(
 
                br(),br(),
                hr(),
-              
+              # seasons stats
               selectInput(
                  "Choice1",
                  "SELECT VARIABLE TO SUMMARIZE IN THE SEASONS STATS DATASET",
                  choices = colnames(first)[2:53],
                  selected = "please choose"
                ),
-               uiOutput("Out1")
+               uiOutput("Out1"),br(), br(),
+              
+              # player_data
+              selectInput(
+                "Choice5",
+                "SELECT VARIABLE TO SUMMARIZE IN THE PLAYERDATA DATASET",
+                choices = colnames(third)[],
+                selected = "please choose"
+              ),
+              uiOutput("Out10")
                
                
                  ),
@@ -50,7 +59,9 @@ ui = fluidPage(
                    conditionalPanel("input.Choice3 === 'View details'", tableOutput("Out7")),
                    
                    conditionalPanel("input.Choice2 === 'Summary'", verbatimTextOutput("Out2")),
-                   conditionalPanel("input.Choice2 === 'View NBA dat'", tableOutput("Out3"))
+                   #conditionalPanel("input.Choice2 === 'Not interested'", tableOutput("Out3")),
+                   conditionalPanel("input.Choice6 === 'Summarize'", verbatimTextOutput("Out12")),
+                   conditionalPanel("input.Choice6 === 'Not interested in'", tableOutput("Out13"))
      
                  )
                )),
@@ -97,11 +108,16 @@ server = function(input, output) {
   b= reactive({
     second[, colnames(second) == input$Choice4]
   })
+  d = reactive({
+    first[, colnames(third) == input$Choice5]
+  })
+  
+  
   output$Out1 = renderUI({
     selectInput(
       "Choice2",
       "Are you sure you want to summarize Seasons stats",
-      choices = c("Summary", "Not interested")
+      choices = c("Not interested", "Summary")
       
     )
   })
@@ -129,6 +145,23 @@ server = function(input, output) {
  output$Out7 = renderTable({
    return(b())
  })
+ 
+ 
+ output$Out10 = renderUI({
+   selectInput(
+     "Choice6",
+     "Are you sure you want to summarize Seasons stats",
+     choices = c("Summarize", "Not interested in")
+     
+   )
+ })
+ output$Out12 = renderPrint({
+   summary(b())
+ })
+ output$Out13 = renderTable({
+   return(b())
+ })
+ 
 
 }
 shinyApp(ui = ui, server = server)
