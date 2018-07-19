@@ -12,7 +12,7 @@ shinyUI(fluidPage(
              '.navbar { background-color: black;color: white;}',
              '.navbar-default .navbar-brand{color: white;}',
              
-             'body{ color: white; background-color:#008080}',
+             'body{ color: white; background-color:#008080;font-family:Sans-Serif;}',
              '#sidebar {
              background-color: #333333;
              }',
