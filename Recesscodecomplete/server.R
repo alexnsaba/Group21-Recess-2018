@@ -8,13 +8,15 @@ playerCSV <- read.csv("Players.csv", header=TRUE,sep=",")
 seasonstats <- read.csv("Seasons_Stats.csv", header=TRUE,sep=",")
 playerdata <- read.csv("player_data.csv", header=TRUE,sep=",")
 pname <- (playerCSV$Player)
+season <- read.csv("Seasons_Stats.csv")
+dynam= season[season$Year %in% 2017,]
 
 library(sqldf)
 nba5  <- read.csv("Seasons_Stats.csv")
 nba4= nba5[nba5$Year %in% 2017,]
 
 shinyServer(function(input, output,session) {
-  
+  #this is for prediction
   observeEvent(input$home, {
     
     require(dplyr)
@@ -57,6 +59,28 @@ shinyServer(function(input, output,session) {
     
     mod= lm(PTS ~ expScore,data=mydata )
     
+    
+  })
+  
+  #processing perfomance predictions
+  observeEvent(input$position, {
+    # require(Lahman)
+    require(dplyr)
+    require(ggplot2)
+    season  <- read.csv("Seasons_Stats.csv")
+    season= season[season$Year %in% 2017,]
+    mydata1 = season%>% select(Year,Player,Pos,X,OWS,DWS,WS,PER,AST,PTS)%>% 
+      filter(Year=="2017",Pos==input$position)%>% 
+      mutate(spct=(OWS^2+WS^2+DWS^2)/(PER^2),expScore1=round(spct*(PTS+AST)),diff=PTS-expScore1)
+    
+    mydata1[is.na(mydata1)] <- 0
+    PlayerToScore = mydata1[ order(mydata1$expScore1, decreasing=TRUE), ]  
+    Scorer=head(PlayerToScore)
+    scorerData=Scorer%>% select(Player,expScore1)
+    output$w=renderTable(scorerData)
+    
+    
+    mod= lm(PTS ~ expScore1,data=mydata1 )
     
   })
   
@@ -296,7 +320,11 @@ shinyServer(function(input, output,session) {
                  tabPanel("PREDICTIONS",
                           sidebarLayout(
                             sidebarPanel( id="sidebar",
-                              h3("PREDICTING THE MOST LIKELY PLAYERS TO SCORE"),
+
+                              h5("PREDICTING THE BEST PLAYERS BY POSITION",style="color:white"),
+                              selectInput("position", p("Player Positions"), 
+                                          choices = dynam$Pos, selected = " "),br(),hr(),
+                              h5("PREDICTING THE MOST LIKELY PLAYERS TO SCORE", style="color:white"),
                               selectInput("home", p("Home Team"), 
                                           choices = nba4$Tm, selected = " "),
                               selectInput("away", p("Away Team"), 
@@ -304,8 +332,10 @@ shinyServer(function(input, output,session) {
                             ),
                             mainPanel(
                               tabsetPanel( id = "predictiontabs",
+                                tabPanel(h5("BEST PLAYERS BY POSITION"),  tableOutput("w"), value="best"),           
                                 tabPanel(h5('HOME'),tableOutput("i"),value="choicex"),
                                 tabPanel(h5('AWAY'),tableOutput("j"),value="choicey")
+                                
                               )
                               
 
@@ -558,6 +588,14 @@ observeEvent((input$p1stat),{
   
   observeEvent(input$away,{
     updateTabsetPanel(session, "predictiontabs", selected = "choicey") 
+    
+  }
+  
+  )
+  
+  # changing the best player prdiction tab
+  observeEvent(input$position,{
+    updateTabsetPanel(session, "predictiontabs", selected = "best") 
     
   }
   
