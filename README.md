@@ -7,7 +7,7 @@ Season_Stats.csv
 Players.csv
 
 Player_data.csv
-# Group Members
+# Team Members
 
 ## NAME                          REGISTRATION N0.               STUDENT NO. 
 
