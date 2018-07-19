@@ -1,113 +1,167 @@
 library(shiny)
-ui <- fluidPage(
-  
-  tags$style(HTML("
-   p{color:green;font-size:20pt;}
-   h4{color:blue;}
-   
- 
-                   ")),
+first <- read.csv("Seasons_Stats.csv", header=TRUE,sep=",")
 
+second <- read.csv("Players.csv", header=TRUE,sep=",")
+
+third <- read.csv("player_data.csv", header=TRUE,sep=",")
+ui = fluidPage(
+  tags$style(type = 'text/css', 
+             '.navbar { background-color: black;color: white}',
+             '.navbar-default .navbar-brand{color: white;}',
+            
+
+             'body{ color: black; background-color:#008080}'
+
+             
+  ),
   
   navbarPage(title=p("NATIONAL BASKET BALL ASSOCIATION ANALYSIS"),
-             
-             
-               tabPanel("SUMMARY", 
-                        
-                        fluidRow(
-                          selectInput("select1", label = h4("Choose the data to summarize"), 
-                                      choices = list("SEASON STATS" = read.csv('Seasons_Stats.csv', stringsAsFactors = FALSE) , "PLAYER DATA" = 2, "PLAYER" = 3), selected = 1),
-                          col( 2,
-                              tableOutput("sel")
-                              )
-                 # conditionalPanel(input.select1="SEASON STAT",
-                  #select) 
+                
+                  
+                tabPanel("SUMMARY",
+               sidebarLayout(
+                 sidebarPanel(
+                   # player
+                   selectInput(
+                     "Choice4",
+                     "SELECT VARIABLE TO SUMMARIZE IN PLAYER DATASET",
+                     choices = colnames(second)[2:8],
+                     selected = "please select"
+                   ),
+                   uiOutput("out5"),
+
+
+               br(),br(),
+               hr(),
+              # seasons stats
+              selectInput(
+                 "Choice1",
+                 "SELECT VARIABLE TO SUMMARIZE IN THE SEASONS STATS DATASET",
+                 choices = colnames(first)[2:53],
+                 selected = "please choose"
+               ),
+               uiOutput("Out1"),br(), br(),
+              
+              # player_data
+              selectInput(
+                "Choice5",
+                "SELECT VARIABLE TO SUMMARIZE IN THE PLAYERDATA DATASET",
+                choices = colnames(third)[],
+                selected = "please choose"
+              ),
+              uiOutput("Out10")
+               
+               
+                 ),
+                 mainPanel(
+                   
+                   conditionalPanel("input.Choice3 === 'Summarize player'", verbatimTextOutput("Out6")),
+                   conditionalPanel("input.Choice3 === 'View details'", tableOutput("Out7")),
+                   
+                   conditionalPanel("input.Choice2 === 'Summary'", verbatimTextOutput("Out2")),
+                   #conditionalPanel("input.Choice2 === 'Not interested'", tableOutput("Out3")),
+                   conditionalPanel("input.Choice6 === 'Summarize'", verbatimTextOutput("Out12")),
+                   conditionalPanel("input.Choice6 === 'Not interested in'", tableOutput("Out13"))
+     
+                 )
                )),
-               tabPanel("PREDICTIONS",
-                        fluidRow(plotOutput("statePlot"),
-                                 wellPanel(
-                                   sliderInput(inputId = "nlabels",
-                                               label = "Top n States:",
-                                               min = 1,
-                                               max = 10,
-                                               value = 6,
-                                               step = 1)
-                                 )
-                        )
+               tabPanel("PREDICTIONS"
                ),
                tabPanel("RELATIONSHIPS",
-                        fluidRow(plotOutput("iStatePlot"),
-                                 wellPanel(
-                                   htmlOutput("selectState"))
-                        ),
+                        sidebarLayout(
+                          sidebarPanel(
+                            checkboxGroupInput("datasets", "CHOOSE THE DATASET TO ANALYZE",
+                                               choiceNames = list("Seasons stats","Player","Player data"),
+                                               choiceValues= list("first","","")
+                                               
+                            )
+                            
+                          ),
+                          mainPanel(
+
+                          )
+                          
+                        )
+               ),
+               tabPanel("COMPARISON"
+
+               ),
+               tabPanel("HELP"
+                       
+               ),
+               tabPanel("LOGOUT"
                         
-                        mainPanel(
-                          plotOutput("histPlot")  
-                        )
-               ),
-               
-               tabPanel("COMPARISONS",
-                        fluidRow(plotOutput("iStatePlot"),
-                                 wellPanel(
-                                   htmlOutput("selectState"))
-                        )
-               ),
-               
-               tabPanel("HELP",
-                        fluidRow(plotOutput("iStatePlot"),
-                                 wellPanel(
-                                   htmlOutput("selectState"))
-                        )
                ),
                
                
-               tabPanel("LOGOUT",
-                        fluidRow(plotOutput("iStatePlot"),
-                                 wellPanel(
-                                   htmlOutput("selectState"))
-                        )
-               )
+             
+          footer = h4("CopyRight @ Group21 (2018)")    
                
                
-             
-             
-             
-             ),
-  
-  
-  
-  
-  
-  
-  
-  
-  
-  column(3,
-         selectInput("select", label = h3("Select box"), 
-                     choices = list("Choice 1" = 1, "Choice 2" = 2, "Choice 3" = 3), selected = 1)),
-  br(),
-  
-  
-  sliderInput(inputId="num",label="choose from 1 to 100 ",value=25, min=1,max=100),
-  textInput(inputId="title",label="write a title", value="Histogram of random normal values"),
-  
-  plotOutput("hist"),
-  verbatimTextOutput("stat")
- 
-)
+               ))
 
- 
+server = function(input, output) {
+  
+  a = reactive({
+    first[, colnames(first) == input$Choice1]
+  })
+  b= reactive({
+    second[, colnames(second) == input$Choice4]
+  })
+  d = reactive({
+    first[, colnames(third) == input$Choice5]
+  })
+  
+  
+  output$Out1 = renderUI({
+    selectInput(
+      "Choice2",
+      "Are you sure you want to summarize Seasons stats",
+      choices = c("Not interested", "Summary")
+      
+    )
+  })
+  output$Out2 = renderPrint({
 
-
-server <- function(input, output){
-  output$hist <- renderPlot({
-   
-    hist(rnorm(input$num),main=input$title)
+    summary(a())
+  })
+  output$Out3 = renderTable({
+    return(a())
+  })
+  
+ output$out5 = renderUI({
+    selectInput(
+      "Choice3",
+      "Are you sure you want to summarize Player data",
+      choices = c("Summarize player", "View details")
+      
+    )
     
-    })
-  output$stat <- renderTable({summary(rnorm(Seasons_Stats))
-})
-  
+  })
  
+ output$Out6 = renderPrint({
+   summary(b())
+ })
+ output$Out7 = renderTable({
+   return(b())
+ })
+ 
+ 
+ output$Out10 = renderUI({
+   selectInput(
+     "Choice6",
+     "Are you sure you want to summarize Seasons stats",
+     choices = c("Summarize", "Not interested in")
+     
+   )
+ })
+ output$Out12 = renderPrint({
+   summary(b())
+ })
+ output$Out13 = renderTable({
+   return(b())
+ })
+ 
+
 }
-shinyApp(ui=ui,server=server)
+shinyApp(ui = ui, server = server)
