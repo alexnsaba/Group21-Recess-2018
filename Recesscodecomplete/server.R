@@ -14,6 +14,8 @@ dynam= season[season$Year %in% 2017,]
 library(sqldf)
 nba5  <- read.csv("Seasons_Stats.csv")
 nba4= nba5[nba5$Year %in% 2017,]
+nb5  <- read.csv("Seasons_Stats.csv")
+nb4= nb5[nb5$Year %in% 2017,]
 
 shinyServer(function(input, output,session) {
   #this is for prediction
@@ -23,14 +25,14 @@ shinyServer(function(input, output,session) {
     
     nba5  <- read.csv("Seasons_Stats.csv")
     nba5= nba5[nba5$Year %in% 2017,]
-    mydata = nba5%>% select(Year,Player,Tm,X,OWS,DWS,WS,PER,AST,PTS)%>% 
+    mydata = nba5%>% select(Year,G,Player,Tm,X,OWS,DWS,WS,PER,AST,PTS)%>% 
       filter(Year=="2017",Tm==input$home)%>% 
-      mutate(spct=(OWS^2+WS^2+DWS^2)/(PER^2),expScore=round(spct*(PTS+AST)),diff=PTS-expScore)
+      mutate(spct=(OWS^2+WS^2+DWS^2)/(PER^2),expScore=round(spct*(PTS+AST)),expGameScore=round((expScore/G)),diff=PTS-expScore)
     
     mydata[is.na(mydata)] <- 0
-    PlayerToScore = mydata[ order(mydata$expScore, decreasing=TRUE), ]  
+    PlayerToScore = mydata[ order(mydata$expGameScore, decreasing=TRUE), ]  
     Scorer=head(PlayerToScore)
-    scorerData=Scorer%>% select(Player,Tm,expScore)
+    scorerData=Scorer%>% select(Player,Tm,expGameScore)
     output$i=renderTable(scorerData)
     #scorerData
     #output$a=renderPlot(ggplot(mydata,aes(expScore,PTS))+ geom_point()+stat_smooth(method="lm"))
@@ -40,19 +42,19 @@ shinyServer(function(input, output,session) {
   })
   
   observeEvent(input$away, {
-    require(Lahman)
+    
     require(dplyr)
     require(ggplot2)
     nba5  <- read.csv("Seasons_Stats.csv")
     nba5= nba5[nba5$Year %in% 2017,]
-    mydata = nba5%>% select(Year,Player,Tm,X,OWS,DWS,WS,PER,AST,PTS)%>% 
+    mydata = nba5%>% select(Year,Player,G,Tm,X,OWS,DWS,WS,PER,AST,PTS)%>% 
       filter(Year=="2017",Tm==input$away)%>% 
-      mutate(spct=(OWS^2+WS^2+DWS^2)/(PER^2),expScore=round(spct*(PTS+AST)),diff=PTS-expScore)
+      mutate(spct=(OWS^2+WS^2+DWS^2)/(PER^2),expScore=round(spct*(PTS+AST)),expGameScore=round((expScore/G)),diff=PTS-expScore)
     
     mydata[is.na(mydata)] <- 0
-    PlayerToScore = mydata[ order(mydata$expScore, decreasing=TRUE), ]  
+    PlayerToScore = mydata[ order(mydata$expGameScore, decreasing=TRUE), ]  
     Scorer=head(PlayerToScore)
-    scorerData=Scorer%>% select(Player,Tm,expScore)
+    scorerData=Scorer%>% select(Player,Tm,expGameScore)
     output$j=renderTable(scorerData)
     #scorerData
     #output$a=renderPlot(ggplot(mydata,aes(expScore,PTS))+ geom_point()+stat_smooth(method="lm"))
@@ -132,25 +134,34 @@ shinyServer(function(input, output,session) {
     if(input$select=="Players"){
       w3=read.csv("Players.csv")
       output$a=renderPlot(hist(w3$height,breaks=10,col = "blue",main = "Histogram showing the distribution of the Height of players",xlab = "Height"))
-      output$b=renderPlot(hist(w3$weight,breaks=10,col = "red",main = "Histogram showing the distribution of the weight of players",xlab = "Weight"))
-      output$C=renderPlot(boxplot(w3$height,main="A box plot of height of players",ylab="height",col="pink"))
-      output$d=renderPlot(boxplot(w3$weight,main="A box plot of weight of players",ylab="weight",col="blue"))
-      output$e=renderPlot(plot(w3$height,w3$weight,main = "A scatter plot of weight against height of players",xlab = "Height",ylab = "weight"))
-      output$f=renderPlot(qqnorm(w3$weight,main="Normal QQ plot of weight of players",qqline(w3$weight)))
-      output$g=renderPlot(qqnorm(w3$height,main="Normal QQ plot of Height of players"))
+      # output$b=renderPlot(hist(w3$weight,breaks=10,col = "red",main = "Histogram showing the distribution of the weight of players",xlab = "Weight"))
+      output$b=renderPlot(boxplot(w3$height,main="A box plot of height of players",ylab="height",col="pink"))
+      output$c=renderPlot(boxplot(w3$weight,main="A box plot of weight of players",ylab="weight",col="blue"))
+      # output$e=renderPlot(ggplot(w3,aes(height,weight))+ geom_point()+stat_smooth(method="lm"))
+      # output$e=renderPlot(plot(w3$height,w3$weight,main = "A scatter plot of weight against height of players",xlab = "Height",ylab = "weight"))
+      output$d=renderPlot(qqnorm(w3$weight,main="Normal QQ plot of weight of players",qqline(w3$weight)))
+      output$e=renderPlot(qqnorm(w3$height,main="Normal QQ plot of Height of players"))
     }
     if(input$select=="player_data"){
+      require(ggplot2)
       w4=read.csv("player_data.csv") 
-      output$a=renderPlot(plot(w4$year_start,w4$year_end,main = "A scatter plot of year_start against year_end of players",xlab = "year_start",ylab = "year_end"))
+      #output$a=renderPlot(plot(w4$year_start,w4$year_end,main = "A scatter plot of year_start against year_end of players",xlab = "year_start",ylab = "year_end"))
+      output$a=renderPlot(ggplot(w4,aes(year_start,year_end))+ geom_point()+stat_smooth(method="lm")+ggtitle("A ggplot of year End Against Year Start"))
     }
     if(input$select=="Seasons_statistics"){
-      w5=read.csv("Seasons_Stats.csv") 
-      output$a=renderPlot(plot(w5$Year,w5$FG,main = "A scatter plot of year against FG of players in different seasons",xlab = "year",ylab = "FG"))
-      output$b=renderPlot(boxplot(w5$FG,main="A box plot of FG of players within different seasons",ylab="FG",col="pink"))
-      output$d=renderPlot(plot(w5$Year,w5$PTS,main = "A scatter plot of year against points of players in different seasons",xlab = "year",ylab = "PTS"))
-      output$e=renderPlot(plot(w5$Year,w5$AST,main = "A scatter plot of year against Assists of players in different seasons",xlab = "year",ylab = "AST")) 
-      output$f=renderPlot(hist(w5$PF,breaks=10,col = "deepskyblue",main = "Histogram showing the distribution of Personal Fouls",xlab = "PF"))
-      output$g=renderPlot(plot(w5$Year,w5$PER,main = "A scatter plot of year against Performance Efficiency Rating of players in different seasons",xlab = "year",ylab = "PER"))
+      w5=read.csv("Seasons_Stats.csv")
+      output$a=renderPlot(ggplot(w5,aes(Year,FG))+ geom_point()+stat_smooth(method="lm")+ggtitle( "A ggplot of Year Against FG"))
+      #output$a=renderPlot(plot(w5$Year,w5$FG,main = "A scatter plot of year against FG of players in different seasons",xlab = "year",ylab = "FG"))
+      output$c=renderPlot(boxplot(w5$FG,main="A box plot of FG of players within different seasons",ylab="FG",col="pink"))
+      #output$d=renderPlot(plot(w5$Year,w5$PTS,main = "A scatter plot of year against points of players in different seasons",xlab = "year",ylab = "PTS"))
+      output$b=renderPlot(ggplot(w5,aes(Year,PTS))+ geom_point()+stat_smooth(method="lm")+ ggtitle( "A ggplot of Year Against PTS"))
+      #output$e=renderPlot(ggplot(w5,aes(Year,AST))+ geom_point()+stat_smooth(method="lm"))
+      #output$e=renderPlot(plot(w5$Year,w5$AST,main = "A scatter plot of year against Assists of players in different seasons",xlab = "year",ylab = "AST")) 
+      output$d=renderPlot(ggplot(w5,aes(Year,PER))+ geom_point()+stat_smooth(method="lm")+ ggtitle( "A ggplot of Year Against PER"))
+      output$e=renderPlot(barplot(table(w5$Pos),main=" A bar plot showing the distribution of position of players")
+      )
+      
+      
     }
 
   })
@@ -328,13 +339,20 @@ shinyServer(function(input, output,session) {
                               selectInput("home", p("Home Team"), 
                                           choices = nba4$Tm, selected = " "),
                               selectInput("away", p("Away Team"), 
-                                          choices = nba4$Tm, selected = " ")
+                                          choices = nba4$Tm, selected = " "),br(),hr(),
+                              h5("Predicting the points that a Player will score in the next season",style="color:white"),
+                              
+                              selectInput("per", p("choose a player to predict about"), 
+                                          choices = nb4$Player, selected = " ")
+                              
                             ),
                             mainPanel(
                               tabsetPanel( id = "predictiontabs",
                                 tabPanel(h5("BEST PLAYERS BY POSITION"),  tableOutput("w"), value="best"),           
                                 tabPanel(h5('HOME'),tableOutput("i"),value="choicex"),
-                                tabPanel(h5('AWAY'),tableOutput("j"),value="choicey")
+                                tabPanel(h5('AWAY'),tableOutput("j"),value="choicey"),
+                                tabPanel(h5("PREDICTED PLAYER'S POINTS IN THE NEXT SEASON"),  tableOutput("gi"),value="choicec")
+                                
                                 
                               )
                               
@@ -362,10 +380,8 @@ shinyServer(function(input, output,session) {
                               plotOutput("b"),
                               plotOutput("C"),
                               plotOutput("d"),
-                              plotOutput("e"),
-                              plotOutput("f"),
-                              plotOutput("g"),
-                              plotOutput("h")
+                              plotOutput("e")
+
                             )
                             
                           )
@@ -593,9 +609,38 @@ observeEvent((input$p1stat),{
   
   )
   
-  # changing the best player prdiction tab
+  # changing the best player prediction tab
   observeEvent(input$position,{
     updateTabsetPanel(session, "predictiontabs", selected = "best") 
+    
+  }
+  
+  )
+  #processing perfomance predictions
+  
+  observeEvent(input$per, {
+    w5  <- read.csv("Seasons_Stats.csv")
+    w5[is.na(w5)] <- 0
+    w4= w5[w5$Year %in% 2017,]
+    w7 <- w4[w4$Player  %in% input$per,]
+    set.seed(100)  # setting seed to reproduce results of random sampling
+    trainingRowIndex <- sample(1:nrow(w5), 0.8*nrow(w5))  # row indices for training data
+    trainingData <- w5[trainingRowIndex, ]  # model training data
+    testData  <- w7   # test data
+    #build a model
+    lmMod <- lm(PTS ~ PER+X3PAr+FTr+ORB+DRB+TRB+AST+STL+TOV+WS+BPM+FGA+FT+PF, data=trainingData)
+    #test the model
+    Pred <- predict(lmMod, testData)  # predict distance
+    #calculating the prediction accuracy and error rates
+    actuals_preds <- data.frame(cbind(PreviousPTS=testData$PTS, predictedPTS=Pred))  # make actuals_predicteds dataframe.
+    prediction = head(actuals_preds)
+    output$gi=renderTable(prediction)
+    
+    
+    
+  })
+  observeEvent(input$per,{
+    updateTabsetPanel(session, "predictiontabs", selected = "choicec") 
     
   }
   
